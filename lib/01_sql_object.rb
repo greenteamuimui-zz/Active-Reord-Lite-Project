@@ -16,13 +16,10 @@ class SQLObject
   end
 
   def self.finalize!
-    attributes.each do |column|
-      define_method("#{column.key}") {instance_variable_get("@#{column.value}")}
-    end
-
-    attributes.each do |column|
+    self.columns.each do |column|
+      define_method(column) {self.attributes[column]}
       define_method("#{column}=") do |value|
-        instance_variable_set("@#{column}", "#{value}")
+        self.attributes[column] = value
       end
     end
   end
@@ -40,19 +37,41 @@ class SQLObject
   end
 
   def self.all
-    # ...
+    hash = DBConnection.execute(<<-SQL)
+    SELECT
+      *
+    FROM
+      #{self.table_name}
+    SQL
+    self.parse_all(hash)
   end
 
   def self.parse_all(results)
-    # ...
+    ans = []
+    results.each do |hash|
+      ans << self.new(hash)
+    end
+    ans
   end
 
   def self.find(id)
-    # ...
+    ans = DBConnection.execute(<<-SQL, id)
+    SELECT
+      *
+    FROM
+      #{self.table_name}
+    WHERE
+      #{self.table_name}.id = ?
+    SQL
+    self.parse_all(ans).first
+    # self.all.find_by{|obj| obj.id == id }
   end
 
   def initialize(params = {})
-    # ...
+    params.each do |pair|
+      raise "unknown attribute '#{pair[0]}'" unless self.class.columns.include?(pair[0].to_sym)
+      self.send("#{pair[0]}=", pair[-1])
+    end
   end
 
   def attributes
@@ -60,10 +79,19 @@ class SQLObject
   end
 
   def attribute_values
+    self.class.columns.map {|col_name| self.send(col_name)}
   end
 
   def insert
-    # ...
+    p col_names = self.class.columns.join(" ,")
+    p question_marks = (["?"]*(self.class.columns.length)).join(" ,")
+
+    DBConnection.execute(<<-SQL, *attribute_values)
+    INSERT INTO
+      #{self.class.table_name} (#{col_names})
+    VALUES
+      (#{question_marks})
+    SQL
   end
 
   def update
