@@ -211,7 +211,7 @@ describe SQLObject do
     describe '#update' do
       it 'saves updated attributes to the DB' do
         human = Human.find(2)
-
+        
         human.fname = 'Matthew'
         human.lname = 'von Rubens'
         human.update
