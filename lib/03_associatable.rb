@@ -20,13 +20,29 @@ end
 
 class BelongsToOptions < AssocOptions
   def initialize(name, options = {})
-    # ...
+    if options.empty?
+      self.send("foreign_key=", "#{name.underscore}_id".to_sym)
+      self.send("primary_key=", :id)
+      self.send("class_name=", "#{name.camelcase}")
+    else
+      options.each do |pair|
+        self.send("#{pair[0]}=", pair[-1])
+      end
+    end
   end
 end
 
 class HasManyOptions < AssocOptions
   def initialize(name, self_class_name, options = {})
-    # ...
+    if options.empty?
+      self.send("foreign_key=", "#{self_class_name.underscore}_id".to_sym)
+      self.send("primary_key=", :id)
+      self.send("class_name=", "#{name.camelcase}")
+    else
+      options.each do |pair|
+        self.send("#{pair[0]}=", pair[-1])
+      end
+    end
   end
 end
 
